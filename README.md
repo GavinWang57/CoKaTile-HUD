@@ -2,6 +2,8 @@
 
 **目前版本：v1.1.1**
 
+📥 [下載 Windows 執行檔（CoKaTile HUD v1.1.1.exe）](https://github.com/GavinWang57/CoKaTile-HUD/releases/download/v1.1.1/CoKaTile.HUD.v1.1.1.exe)
+
 跨平台（Windows / macOS）滑鼠與鍵盤視覺輔助工具。適用於：
 
 - **教學螢幕分享/錄影**：讓觀眾清楚看到游標位置、點擊動作、按了什麼鍵
