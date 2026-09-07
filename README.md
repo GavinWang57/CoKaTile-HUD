@@ -4,6 +4,8 @@
 
 📥 [下載 Windows 執行檔（CoKaTile HUD v1.1.1.exe）](https://github.com/GavinWang57/CoKaTile-HUD/releases/download/v1.1.1/CoKaTile.HUD.v1.1.1.exe)
 
+> ⚠️ **Chrome／防毒軟體可能誤判為病毒**：本執行檔由 PyInstaller 打包且未經程式碼簽章，加上需要監聽全域鍵盤滑鼠事件才能運作，這些特徵容易被防毒軟體的啟發式掃描誤判為惡意程式（keylogger 類）。這是**已知的誤判（false positive）**，原始碼完全公開可自行檢視，也可依照下方「打包成執行檔」步驟自行編譯。若被 Chrome 攔截，可點「保留」或於防毒軟體中將其加入白名單。
+
 跨平台（Windows / macOS）滑鼠與鍵盤視覺輔助工具。適用於：
 
 - **教學螢幕分享/錄影**：讓觀眾清楚看到游標位置、點擊動作、按了什麼鍵
