@@ -1,4 +1,4 @@
-"""調整聚光燈、點擊特效、按鍵 HUD、尋找游標等參數的設定視窗。"""
+"""調整聚光燈、點擊特效、按鍵 HUD、尋找游標、放大鏡等參數的設定視窗。"""
 from __future__ import annotations
 
 from dataclasses import replace
@@ -47,6 +47,7 @@ class SettingsDialog(QDialog):
     tabs.addTab(self._build_click_effect_tab(), "點擊特效")
     tabs.addTab(self._build_key_hud_tab(), "按鍵顯示")
     tabs.addTab(self._build_find_cursor_tab(), "尋找游標")
+    tabs.addTab(self._build_magnifier_tab(), "放大鏡")
 
     apply_button = QPushButton("套用")
     apply_button.clicked.connect(self._apply)
@@ -175,6 +176,39 @@ class SettingsDialog(QDialog):
 
     return widget
 
+  def _build_magnifier_tab(self) -> QWidget:
+    widget = QWidget()
+    form = QFormLayout(widget)
+
+    self._magnifier_hotkey = QLineEdit(self._config.magnifier.toggle_hotkey)
+    form.addRow("開關熱鍵", self._magnifier_hotkey)
+
+    self._magnifier_zoom = QDoubleSpinBox()
+    self._magnifier_zoom.setRange(1.5, 8.0)
+    self._magnifier_zoom.setSingleStep(0.5)
+    self._magnifier_zoom.setValue(self._config.magnifier.zoom_factor)
+    form.addRow("放大倍率", self._magnifier_zoom)
+
+    self._magnifier_size = QSpinBox()
+    self._magnifier_size.setRange(100, 600)
+    self._magnifier_size.setValue(self._config.magnifier.lens_size)
+    form.addRow("鏡片大小", self._magnifier_size)
+
+    self._magnifier_shape = QComboBox()
+    self._magnifier_shape.addItems(["circle", "square"])
+    self._magnifier_shape.setCurrentText(self._config.magnifier.shape)
+    form.addRow("形狀", self._magnifier_shape)
+
+    self._magnifier_border_color = self._build_color_picker(self._config.magnifier.border_color)
+    form.addRow("邊框顏色", self._magnifier_border_color)
+
+    self._magnifier_include_tooltip = QCheckBox()
+    self._magnifier_include_tooltip.setChecked(self._config.magnifier.include_tooltip)
+    self._magnifier_include_tooltip.setToolTip("出現提示視窗時擴大放大範圍涵蓋提示；放大鏡開啟時也可按 Ctrl + 滑鼠中鍵切換")
+    form.addRow("放大範圍涵蓋提示視窗", self._magnifier_include_tooltip)
+
+    return widget
+
   def _build_color_picker(self, initial_color: str) -> QPushButton:
     button = QPushButton(initial_color)
     button.setProperty("color_value", initial_color)
@@ -222,6 +256,15 @@ class SettingsDialog(QDialog):
         effect_style=self._effect_style.currentText(),
         effect_duration_ms=self._effect_duration.value(),
         play_sound=self._play_sound.isChecked(),
+      ),
+      magnifier=replace(
+        self._config.magnifier,
+        toggle_hotkey=self._magnifier_hotkey.text(),
+        zoom_factor=self._magnifier_zoom.value(),
+        lens_size=self._magnifier_size.value(),
+        shape=self._magnifier_shape.currentText(),
+        border_color=self._magnifier_border_color.property("color_value"),
+        include_tooltip=self._magnifier_include_tooltip.isChecked(),
       ),
     )
     self._on_apply(new_config)

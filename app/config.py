@@ -17,6 +17,12 @@ def _default_find_cursor_hotkey() -> str:
   return "<ctrl>+<alt>+l"
 
 
+def _default_magnifier_hotkey() -> str:
+  if sys.platform == "darwin":
+    return "<cmd>+<alt>+z"
+  return "<ctrl>+<alt>+z"
+
+
 @dataclass
 class SpotlightConfig:
   enabled: bool = True
@@ -63,11 +69,23 @@ class FindCursorConfig:
 
 
 @dataclass
+class MagnifierConfig:
+  enabled: bool = False
+  toggle_hotkey: str = field(default_factory=_default_magnifier_hotkey)
+  zoom_factor: float = 2.0
+  lens_size: int = 240  # 鏡片邊長（直徑），邏輯像素
+  shape: str = "circle"  # "circle" | "square"
+  border_color: str = "#FFFFFF"
+  include_tooltip: bool = True  # 出現提示視窗時擴大擷取範圍涵蓋提示（Ctrl + 滑鼠中鍵切換）
+
+
+@dataclass
 class AppConfig:
   spotlight: SpotlightConfig = field(default_factory=SpotlightConfig)
   click_effect: ClickEffectConfig = field(default_factory=ClickEffectConfig)
   key_hud: KeyHudConfig = field(default_factory=KeyHudConfig)
   find_cursor: FindCursorConfig = field(default_factory=FindCursorConfig)
+  magnifier: MagnifierConfig = field(default_factory=MagnifierConfig)
   active_profile: str = "daily"
   start_with_system: bool = False
   config_version: int = 1
@@ -97,6 +115,7 @@ def config_from_dict(data: dict) -> AppConfig:
     click_effect=_load_sub(ClickEffectConfig, data, "click_effect"),
     key_hud=_load_sub(KeyHudConfig, data, "key_hud"),
     find_cursor=_load_sub(FindCursorConfig, data, "find_cursor"),
+    magnifier=_load_sub(MagnifierConfig, data, "magnifier"),
     active_profile=data.get("active_profile", _DEFAULTS.active_profile),
     start_with_system=data.get("start_with_system", _DEFAULTS.start_with_system),
     config_version=data.get("config_version", _DEFAULTS.config_version),

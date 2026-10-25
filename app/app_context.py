@@ -12,12 +12,22 @@ from app.input.events import display_label
 from app.input.global_listener import GlobalInputListener
 from app.input.hotkey_manager import HotkeyManager
 from app.input.shake_detector import ShakeDetector
+from app.magnifier.magnifier_window import MagnifierWindow
 from app.overlay.overlay_manager import OverlayManager
 from app.platform import permissions_macos
 from app.platform.screen_utils import screen_containing_point
 from app.profiles import apply_profile
 from app.settings_ui.settings_dialog import SettingsDialog
 from app.tray.tray_icon import TrayIcon
+
+_MOUSE_BUTTON_LABELS = {
+  "left": "左鍵",
+  "right": "右鍵",
+  "middle": "中鍵",
+  "x1": "側鍵(上一頁)",
+  "x2": "側鍵(下一頁)",
+  "unknown": "其他滑鼠鍵",
+}
 
 
 class AppContext(QObject):
@@ -31,6 +41,8 @@ class AppContext(QObject):
     self._hud_windows: dict = {}
     self._shake_detector = ShakeDetector(parent=self)
     self._hotkey_manager = HotkeyManager(self._config.find_cursor.trigger_hotkey, self)
+    self._magnifier = MagnifierWindow(self._config.magnifier)
+    self._magnifier_hotkey = HotkeyManager(self._config.magnifier.toggle_hotkey, self)
     self._settings_dialog: SettingsDialog | None = None
 
     self._build_hud_windows()
@@ -47,6 +59,7 @@ class AppContext(QObject):
       on_toggle_click_effect=self._on_toggle_click_effect,
       on_toggle_key_hud=self._on_toggle_key_hud,
       on_toggle_find_cursor=self._on_toggle_find_cursor,
+      on_toggle_magnifier=self._on_toggle_magnifier,
       on_open_settings=self._open_settings,
       on_quit=self._quit,
     )
@@ -76,17 +89,22 @@ class AppContext(QObject):
     self._listener.mouse_moved.connect(self._overlay_manager.on_cursor_moved)
     self._listener.mouse_moved.connect(self._shake_detector.on_mouse_moved)
     self._listener.mouse_moved.connect(self._on_mouse_moved_for_hud_anchor)
+    self._listener.mouse_moved.connect(self._magnifier.on_cursor_moved)
     self._listener.mouse_pressed.connect(self._overlay_manager.on_mouse_pressed)
     self._listener.mouse_pressed.connect(self._on_mouse_pressed_for_hud)
+    self._listener.mouse_pressed.connect(self._on_mouse_pressed_for_magnifier)
     self._listener.mouse_released.connect(self._on_mouse_released_for_hud)
     self._listener.key_pressed.connect(self._on_key_pressed)
     self._listener.key_pressed.connect(self._hotkey_manager.on_key_pressed)
+    self._listener.key_pressed.connect(self._magnifier_hotkey.on_key_pressed)
     self._listener.key_released.connect(self._on_key_released_for_hud)
     self._listener.key_released.connect(self._hotkey_manager.on_key_released)
+    self._listener.key_released.connect(self._magnifier_hotkey.on_key_released)
     self._listener.listener_error.connect(self._on_listener_error)
 
     self._shake_detector.shake_detected.connect(self._overlay_manager.trigger_find_cursor)
     self._hotkey_manager.hotkey_triggered.connect(self._overlay_manager.trigger_find_cursor)
+    self._magnifier_hotkey.hotkey_triggered.connect(self._on_hotkey_toggle_magnifier)
 
   def _on_mouse_moved_for_hud_anchor(self, x: int, y: int) -> None:
     if self._config.key_hud.enabled and self._config.key_hud.corner == "follow_cursor":
@@ -106,7 +124,7 @@ class AppContext(QObject):
 
   def _on_mouse_pressed_for_hud(self, x: int, y: int, button: str) -> None:
     if self._config.key_hud.enabled and self._config.key_hud.show_mouse_buttons:
-      label = {"left": "左鍵", "right": "右鍵", "middle": "中鍵"}.get(button, button)
+      label = _MOUSE_BUTTON_LABELS.get(button, button)
       self._active_hud_window().on_key_event_pressed(key_id=f"mouse:{button}", display_text=label)
 
   def _on_mouse_released_for_hud(self, x: int, y: int, button: str) -> None:
@@ -155,6 +173,27 @@ class AppContext(QObject):
     )
     self._save_and_apply()
 
+  def _on_toggle_magnifier(self, enabled: bool) -> None:
+    self._config = replace(self._config, magnifier=replace(self._config.magnifier, enabled=enabled))
+    self._save_and_apply()
+
+  def _on_hotkey_toggle_magnifier(self) -> None:
+    self._on_toggle_magnifier(not self._config.magnifier.enabled)
+    self._tray.sync_from_config(self._config)
+
+  def _on_mouse_pressed_for_magnifier(self, x: int, y: int, button: str) -> None:
+    """放大鏡開啟時按 Ctrl + 滑鼠中鍵，切換出現提示視窗時是否擴大放大範圍涵蓋提示。"""
+    if button != "middle" or not self._config.magnifier.enabled:
+      return
+    if not self._magnifier_hotkey.is_held("ctrl"):
+      return
+    include_tooltip = not self._config.magnifier.include_tooltip
+    self._config = replace(
+      self._config, magnifier=replace(self._config.magnifier, include_tooltip=include_tooltip)
+    )
+    self._save_and_apply()
+    self._magnifier.show_status("放大提示：開" if include_tooltip else "放大提示：關")
+
   def _save_and_apply(self) -> None:
     self._config_manager.save(self._config)
     self._apply_config_to_components()
@@ -165,6 +204,8 @@ class AppContext(QObject):
       window.set_config(self._config.key_hud)
     self._sync_hud_visibility()
     self._hotkey_manager.set_combo(self._config.find_cursor.trigger_hotkey)
+    self._magnifier.set_config(self._config.magnifier)
+    self._magnifier_hotkey.set_combo(self._config.magnifier.toggle_hotkey)
 
   def _sync_hud_visibility(self) -> None:
     for window in self._hud_windows.values():
@@ -184,6 +225,7 @@ class AppContext(QObject):
   def _quit(self) -> None:
     self._listener.stop()
     self._overlay_manager.shutdown()
+    self._magnifier.close()
     for window in self._hud_windows.values():
       window.close()
     QGuiApplication.instance().quit()

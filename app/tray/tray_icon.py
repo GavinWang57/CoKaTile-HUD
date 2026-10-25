@@ -1,4 +1,4 @@
-"""系統匣選單：切換使用情境預設、開關四項功能、開啟設定、結束程式。"""
+"""系統匣選單：切換使用情境預設、開關五項功能、開啟設定、結束程式。"""
 from __future__ import annotations
 
 from PySide6.QtGui import QAction, QActionGroup, QIcon
@@ -27,6 +27,7 @@ class TrayIcon(QSystemTrayIcon):
     on_toggle_click_effect,
     on_toggle_key_hud,
     on_toggle_find_cursor,
+    on_toggle_magnifier,
     on_open_settings,
     on_quit,
     parent=None,
@@ -38,6 +39,7 @@ class TrayIcon(QSystemTrayIcon):
     self._on_toggle_click_effect = on_toggle_click_effect
     self._on_toggle_key_hud = on_toggle_key_hud
     self._on_toggle_find_cursor = on_toggle_find_cursor
+    self._on_toggle_magnifier = on_toggle_magnifier
     self._on_open_settings = on_open_settings
     self._on_quit = on_quit
     self.setToolTip(f"{APP_NAME} v{APP_VERSION}")
@@ -67,6 +69,7 @@ class TrayIcon(QSystemTrayIcon):
     self._click_effect_action = self._add_checkable("點擊視覺特效", self._on_toggle_click_effect)
     self._key_hud_action = self._add_checkable("按鍵/按鈕顯示", self._on_toggle_key_hud)
     self._find_cursor_action = self._add_checkable("尋找游標輔助", self._on_toggle_find_cursor)
+    self._magnifier_action = self._add_checkable("放大鏡", self._on_toggle_magnifier)
 
     self._menu.addSeparator()
     settings_action = self._menu.addAction("設定...")
@@ -91,6 +94,7 @@ class TrayIcon(QSystemTrayIcon):
       (self._click_effect_action, config.click_effect.enabled),
       (self._key_hud_action, config.key_hud.enabled),
       (self._find_cursor_action, config.find_cursor.enabled),
+      (self._magnifier_action, config.magnifier.enabled),
     ):
       action.blockSignals(True)
       action.setChecked(enabled)

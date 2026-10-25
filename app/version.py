@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 APP_NAME = "CoKaTile HUD"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.2.0"
 APP_AUTHOR = "Gavin"
 APP_AUTHOR_EMAIL = "crown.soar@gmail.com"
 APP_COPYRIGHT = f"Copyright (c) 2026 {APP_AUTHOR} ({APP_AUTHOR_EMAIL})"

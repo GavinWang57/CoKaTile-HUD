@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from app.config import AppConfig, ConfigManager, SpotlightConfig, config_from_dict
+from app.config import AppConfig, ConfigManager, MagnifierConfig, SpotlightConfig, config_from_dict
 
 
 def test_save_and_load_round_trip(tmp_path: Path) -> None:
@@ -31,3 +31,17 @@ def test_load_ignores_unknown_and_missing_fields() -> None:
   assert config.spotlight.enabled is False
   assert config.spotlight.radius == SpotlightConfig().radius
   assert config.click_effect == AppConfig().click_effect
+
+
+def test_old_config_without_magnifier_gets_defaults() -> None:
+  config = config_from_dict({"spotlight": {"enabled": False}})
+  assert config.magnifier == MagnifierConfig()
+
+
+def test_magnifier_round_trip(tmp_path: Path) -> None:
+  manager = ConfigManager(path=tmp_path / "settings.json")
+  original = AppConfig(magnifier=MagnifierConfig(enabled=True, zoom_factor=3.5, lens_size=300, shape="square"))
+
+  manager.save(original)
+
+  assert manager.load() == original
