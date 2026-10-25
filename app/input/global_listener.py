@@ -60,7 +60,8 @@ class GlobalInputListener(QObject):
 
   def _on_click(self, x: int, y: int, button: mouse.Button, pressed: bool) -> None:
     logical_x, logical_y = self._to_logical(x, y)
-    name = _BUTTON_NAMES.get(button, str(button))
+    # 側鍵（x1/x2）只有 Windows/Linux 版 pynput 才有定義，用列舉名稱取得，避免 macOS 上存取不存在的屬性
+    name = _BUTTON_NAMES.get(button, getattr(button, "name", str(button)))
     if pressed:
       self.mouse_pressed.emit(logical_x, logical_y, name)
     else:
